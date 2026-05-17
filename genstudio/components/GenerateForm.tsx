@@ -73,7 +73,7 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                 <div className="flex gap-4">
                   <div className="space-y-1.5 flex-1">
                     <span className="text-xs text-muted-foreground">Width</span>
-                    <Select value={width.toString()} onValueChange={(v) => setWidth(parseInt(v))} disabled={isSubmitting}>
+                    <Select value={width.toString()} onValueChange={(v) => { if (v) setWidth(parseInt(v)); }} disabled={isSubmitting}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -86,7 +86,7 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                   </div>
                   <div className="space-y-1.5 flex-1">
                     <span className="text-xs text-muted-foreground">Height</span>
-                    <Select value={height.toString()} onValueChange={(v) => setHeight(parseInt(v))} disabled={isSubmitting}>
+                    <Select value={height.toString()} onValueChange={(v) => { if (v) setHeight(parseInt(v)); }} disabled={isSubmitting}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -110,7 +110,7 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                   max={8}
                   step={1}
                   value={[steps]}
-                  onValueChange={(vals) => setSteps(vals[0])}
+                  onValueChange={(vals) => setSteps(typeof vals === 'number' ? vals : vals[0])}
                   disabled={isSubmitting}
                   className="py-1"
                 />

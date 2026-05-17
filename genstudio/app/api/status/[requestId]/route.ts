@@ -37,6 +37,14 @@ export async function GET(
           completedAt: new Date(),
         },
       });
+    } else if ((falStatus as any).status === "FAILED" || (falStatus as any).status === "ERROR") {
+      generation = await prisma.generation.update({
+        where: { id: generation.id },
+        data: {
+          status: "failed",
+          errorMessage: (falStatus as any).error || "Generation failed at fal.ai",
+        },
+      });
     }
 
     return NextResponse.json(generation);

@@ -13,6 +13,9 @@ export async function GET(req: NextRequest) {
         imageUrl: true,
         createdAt: true,
         parentId: true,
+        width: true,
+        height: true,
+        steps: true,
       },
       orderBy: {
         createdAt: 'desc',

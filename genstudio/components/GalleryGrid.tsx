@@ -27,9 +27,9 @@ export function GalleryGrid() {
 
   if (isLoading && generations.length === 0) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 sm:gap-6 space-y-4 sm:space-y-6">
         {[...Array(8)].map((_, i) => (
-          <Skeleton key={i} className="aspect-square rounded-2xl bg-muted/60" />
+          <Skeleton key={i} className="aspect-square rounded-2xl bg-muted/60 break-inside-avoid" />
         ))}
       </div>
     );
@@ -50,9 +50,11 @@ export function GalleryGrid() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in duration-500">
+    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 sm:gap-6 space-y-4 sm:space-y-6 animate-in fade-in duration-500">
       {generations.map((gen) => (
-        <GenerationCard key={gen.id} generation={gen} />
+        <div key={gen.id} className="break-inside-avoid">
+          <GenerationCard generation={gen} />
+        </div>
       ))}
     </div>
   );

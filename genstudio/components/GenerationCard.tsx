@@ -17,7 +17,10 @@ export function GenerationCard({ generation }: { generation: Generation }) {
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <Card className="group relative overflow-hidden aspect-square border-0 bg-muted/30">
+    <Card 
+      className="group relative overflow-hidden border-0 bg-muted/30 shadow-sm transition-all duration-300 hover:shadow-md"
+      style={{ aspectRatio: generation.width && generation.height ? `${generation.width} / ${generation.height}` : '1 / 1' }}
+    >
       {/* Background Error State */}
       {generation.status === "failed" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-destructive/5 text-destructive space-y-2">
@@ -112,8 +115,11 @@ export function GenerationCard({ generation }: { generation: Generation }) {
           <p className="text-white text-sm font-medium line-clamp-2 mb-1.5 leading-snug shadow-sm">
             {generation.prompt}
           </p>
-          <div className="text-white/70 text-[11px] flex items-center">
+          <div className="text-white/70 text-[11px] flex items-center justify-between">
             <RelativeTime date={generation.createdAt} />
+            <span className="bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] text-white">
+              {generation.width || 1024}x{generation.height || 1024} • {generation.steps || 4} steps
+            </span>
           </div>
         </div>
       </div>

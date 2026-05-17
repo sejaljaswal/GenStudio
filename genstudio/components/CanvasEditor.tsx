@@ -46,7 +46,8 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
       fabricRef.current = fCanvas;
 
       try {
-        const img = await fabric.FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(imageUrl)}`;
+        const img = await fabric.FabricImage.fromURL(proxyUrl, { crossOrigin: 'anonymous' });
 
         if (!isMounted) return;
 
@@ -93,13 +94,16 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
     };
   }, [imageUrl, saveHistory]);
 
-  const undo = () => {
+  const undo = async () => {
     if (history.length > 1) {
       const prev = history[history.length - 2];
-      fabricRef.current.loadFromJSON(JSON.parse(prev), () => {
+      try {
+        await fabricRef.current.loadFromJSON(JSON.parse(prev));
         fabricRef.current.renderAll();
         setHistory(h => h.slice(0, -1));
-      });
+      } catch (err) {
+        console.error("Failed to undo:", err);
+      }
     }
   };
 
@@ -152,10 +156,10 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
     
     const canvas = fabricRef.current;
     
-    const left = cropRect.left!;
-    const top = cropRect.top!;
-    const width = cropRect.width! * cropRect.scaleX!;
-    const height = cropRect.height! * cropRect.scaleY!;
+    const left = cropRect.left || 0;
+    const top = cropRect.top || 0;
+    const width = Math.max(1, (cropRect.width || 0) * (cropRect.scaleX || 1));
+    const height = Math.max(1, (cropRect.height || 0) * (cropRect.scaleY || 1));
     
     canvas.remove(cropRect);
     

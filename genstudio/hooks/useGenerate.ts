@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGenerationStore } from '@/store/generationStore';
 import { GenerateRequest } from '@/types';
+import { mutate } from 'swr';
 
 export function useGenerate() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,8 +79,6 @@ export function useGenerate() {
           
           const statusData = await statusRes.json() as any;
 
-          setIsSubmitting(false);
-
           updateActiveJob({
             activeJobStatus: statusData.status,
             activeJobImageUrl: statusData.imageUrl,
@@ -87,7 +86,11 @@ export function useGenerate() {
           });
 
           if (statusData.status === 'completed' || statusData.status === 'failed') {
+            setIsSubmitting(false);
             cleanup();
+            if (statusData.status === 'completed') {
+              mutate('/api/generations');
+            }
           }
         } catch (pollError) {
           console.error("Polling error:", pollError);
