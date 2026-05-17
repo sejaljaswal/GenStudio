@@ -3,15 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Download, AlertCircle, Wand2, ArrowLeftRight } from "lucide-react";
+import { Download, AlertCircle, Wand2, ArrowLeftRight, Paintbrush } from "lucide-react";
 import { Generation } from "@/types";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CanvasEditor } from "@/components/CanvasEditor";
 
 export function GenerationCard({ generation }: { generation: Generation }) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <Card className="group relative overflow-hidden aspect-square border-0 bg-muted/30">
@@ -84,6 +86,19 @@ export function GenerationCard({ generation }: { generation: Generation }) {
               </Button>
             )}
           </div>
+          
+          {/* Edit button */}
+          {generation.status === "completed" && generation.imageUrl && (
+            <Button 
+              size="sm" 
+              variant="secondary" 
+              className="h-7 px-2 mt-1 text-xs bg-background/80 backdrop-blur-sm hover:bg-background"
+              onClick={() => setIsEditing(true)}
+            >
+              <Paintbrush className="w-3 h-3 mr-1" />
+              Edit on Canvas
+            </Button>
+          )}
         </div>
 
         {/* Bottom Content (Prompt & Time) */}
@@ -96,6 +111,10 @@ export function GenerationCard({ generation }: { generation: Generation }) {
           </div>
         </div>
       </div>
+      
+      {isEditing && generation.imageUrl && (
+        <CanvasEditor imageUrl={generation.imageUrl} onClose={() => setIsEditing(false)} />
+      )}
     </Card>
   );
 }
