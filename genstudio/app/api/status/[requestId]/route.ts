@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/db";
+import { fal } from "@fal-ai/client";
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { requestId: string } }
+) {
+  try {
+    const { requestId } = params;
+
+    let generation = await prisma.generation.findFirst({
+      where: { falRequestId: requestId },
+    });
+
+    if (!generation) {
+      return NextResponse.json({ error: "Generation not found" }, { status: 404 });
+    }
+
+    if (generation.status === "completed" || generation.status === "failed") {
+      return NextResponse.json(generation);
+    }
+
+    const falStatus = await fal.queue.status("fal-ai/flux/schnell", {
+      requestId,
+      logs: false,
+    });
+
+    if (falStatus.status === "COMPLETED") {
+      const result = await fal.queue.result("fal-ai/flux/schnell", { requestId }) as any;
+      
+      generation = await prisma.generation.update({
+        where: { id: generation.id },
+        data: {
+          status: "completed",
+          imageUrl: result?.images?.[0]?.url || null,
+          completedAt: new Date(),
+        },
+      });
+    } else if (falStatus.status === "FAILED") {
+      generation = await prisma.generation.update({
+        where: { id: generation.id },
+        data: {
+          status: "failed",
+          errorMessage: (falStatus as any).error || "Generation failed",
+        },
+      });
+    }
+
+    return NextResponse.json(generation);
+  } catch (error: any) {
+    console.error("Status API error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
