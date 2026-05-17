@@ -1,56 +1,58 @@
 "use client";
 
 import { useGallery } from "@/hooks/useGallery";
-import { Card } from "@/components/ui/card";
+import { GenerationCard } from "@/components/GenerationCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import Image from "next/image";
-import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { ImageOff, RefreshCcw, Sparkles } from "lucide-react";
 
 export function GalleryGrid() {
-  const { generations, isLoading } = useGallery();
+  const { generations, isLoading, error, refetch } = useGallery();
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center border border-dashed rounded-2xl bg-destructive/5 border-destructive/20 animate-in fade-in">
+        <ImageOff className="w-10 h-10 text-destructive/50 mb-4" />
+        <h3 className="text-lg font-medium text-destructive mb-2">Failed to load gallery</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+          There was an issue fetching your generated images. Please try again.
+        </p>
+        <Button variant="outline" onClick={refetch}>
+          <RefreshCcw className="w-4 h-4 mr-2" />
+          Click to retry
+        </Button>
+      </div>
+    );
+  }
 
   if (isLoading && generations.length === 0) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {[...Array(8)].map((_, i) => (
-          <Skeleton key={i} className="aspect-square rounded-xl" />
+          <Skeleton key={i} className="aspect-square rounded-2xl bg-muted/60" />
         ))}
       </div>
     );
   }
 
-  const validGenerations = generations.filter(g => g.status === 'completed' && g.imageUrl);
-
-  if (validGenerations.length === 0) {
+  if (generations.length === 0) {
     return (
-      <div className="text-center py-20 border border-dashed rounded-xl border-border/50 bg-muted/10">
-        <p className="text-muted-foreground">No images generated yet.</p>
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center border border-dashed rounded-2xl border-border/50 bg-muted/10 animate-in fade-in">
+        <div className="w-16 h-16 mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-primary/50" />
+        </div>
+        <h3 className="text-xl font-medium mb-2">No generations yet</h3>
+        <p className="text-muted-foreground max-w-sm">
+          Your generations will appear here. Create your first one above!
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {validGenerations.map((gen) => (
-        <Card key={gen.id} className="overflow-hidden group border-0 bg-muted/30">
-          <div className="relative aspect-square w-full">
-            <Image
-              src={gen.imageUrl!}
-              alt={gen.prompt}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-              <p className="text-white text-xs font-medium line-clamp-3 mb-1 leading-relaxed shadow-sm">
-                {gen.prompt}
-              </p>
-              <span className="text-white/70 text-[10px]">
-                {formatDistanceToNow(new Date(gen.createdAt), { addSuffix: true })}
-              </span>
-            </div>
-          </div>
-        </Card>
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in duration-500">
+      {generations.map((gen) => (
+        <GenerationCard key={gen.id} generation={gen} />
       ))}
     </div>
   );
