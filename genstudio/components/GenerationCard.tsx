@@ -8,8 +8,9 @@ import { Generation } from "@/types";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CanvasEditor } from "@/components/CanvasEditor";
+import { cn } from "@/lib/utils";
 
 export function GenerationCard({ generation }: { generation: Generation }) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -71,19 +72,24 @@ export function GenerationCard({ generation }: { generation: Generation }) {
           {/* Action Buttons */}
           <div className="flex gap-2 mt-1">
             {generation.imageUrl && (
-              <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background" asChild>
-                <a href={generation.imageUrl} target="_blank" rel="noopener noreferrer" download>
-                  <Download className="w-4 h-4 text-foreground" />
-                </a>
-              </Button>
+              <a 
+                href={generation.imageUrl} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                download
+                className={cn(buttonVariants({ size: "icon", variant: "secondary" }), "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background")}
+              >
+                <Download className="w-4 h-4 text-foreground" />
+              </a>
             )}
             
             {generation.status !== "failed" && (
-              <Button size="icon" variant="default" className="h-8 w-8 rounded-full bg-primary/90 backdrop-blur-sm hover:bg-primary shadow-sm" asChild>
-                <Link href={`/tweak/${generation.id}`}>
-                  <Wand2 className="w-4 h-4 text-primary-foreground" />
-                </Link>
-              </Button>
+              <Link 
+                href={`/tweak/${generation.id}`}
+                className={cn(buttonVariants({ size: "icon", variant: "default" }), "h-8 w-8 rounded-full bg-primary/90 backdrop-blur-sm hover:bg-primary shadow-sm")}
+              >
+                <Wand2 className="w-4 h-4 text-primary-foreground" />
+              </Link>
             )}
           </div>
           

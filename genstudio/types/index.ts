@@ -10,6 +10,7 @@ export interface Generation {
   seed: number | null;
   status: GenerationStatus;
   imageUrl: string | null;
+  parentId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

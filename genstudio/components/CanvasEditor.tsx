@@ -55,8 +55,10 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
         const scaledWidth = img.width! * scale;
         const scaledHeight = img.height! * scale;
         
-        fCanvas.setWidth(scaledWidth);
-        fCanvas.setHeight(scaledHeight);
+        fCanvas.setDimensions({
+          width: scaledWidth,
+          height: scaledHeight
+        });
         
         img.scale(scale);
         img.set({
@@ -69,7 +71,7 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
         });
         
         fCanvas.add(img);
-        fCanvas.sendToBack(img);
+        fCanvas.sendObjectToBack(img);
         fCanvas.renderAll();
         
         saveHistory(fCanvas);
@@ -166,8 +168,10 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
       obj.setCoords();
     });
     
-    canvas.setWidth(width);
-    canvas.setHeight(height);
+    canvas.setDimensions({
+      width: width,
+      height: height
+    });
     canvas.renderAll();
     
     setIsCropping(false);
