@@ -21,6 +21,7 @@ export interface GenerateRequest {
   height?: number;
   steps?: number;
   seed?: number;
+  parentId?: string;
 }
 
 export interface GenerateResponse {

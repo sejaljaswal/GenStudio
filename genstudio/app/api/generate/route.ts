@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
       height = 1024,
       steps = 4,
       seed = Math.floor(Math.random() * 1000000),
+      parentId,
     } = body;
 
     if (!prompt || typeof prompt !== "string" || prompt.length < 3) {
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
         height,
         steps,
         seed,
+        parentId,
         status: "pending",
       },
     });

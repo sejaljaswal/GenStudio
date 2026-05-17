@@ -12,15 +12,17 @@ import { ChevronDown, ChevronUp, Loader2, Sparkles } from "lucide-react";
 interface GenerateFormProps {
   onGenerate: (params: GenerateRequest) => Promise<void>;
   isSubmitting: boolean;
+  initialValues?: Partial<GenerateRequest>;
+  buttonText?: string;
 }
 
-export function GenerateForm({ onGenerate, isSubmitting }: GenerateFormProps) {
-  const [prompt, setPrompt] = useState("");
-  const [negativePrompt, setNegativePrompt] = useState("");
-  const [width, setWidth] = useState<number>(1024);
-  const [height, setHeight] = useState<number>(1024);
-  const [steps, setSteps] = useState<number>(4);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonText = "Generate Image" }: GenerateFormProps) {
+  const [prompt, setPrompt] = useState(initialValues?.prompt || "");
+  const [negativePrompt, setNegativePrompt] = useState(initialValues?.negativePrompt || "");
+  const [width, setWidth] = useState<number>(initialValues?.width || 1024);
+  const [height, setHeight] = useState<number>(initialValues?.height || 1024);
+  const [steps, setSteps] = useState<number>(initialValues?.steps || 4);
+  const [showAdvanced, setShowAdvanced] = useState(!!initialValues);
 
   const handleSubmit = () => {
     if (!prompt || prompt.trim().length < 3) return;
@@ -141,7 +143,7 @@ export function GenerateForm({ onGenerate, isSubmitting }: GenerateFormProps) {
           ) : (
             <>
               <Sparkles className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-              Generate Image
+              {buttonText}
             </>
           )}
         </Button>
