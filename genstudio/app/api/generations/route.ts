@@ -20,11 +20,19 @@ export async function GET(req: NextRequest) {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 50, // Defensive limit to prevent database exhaustion
     });
+
+    if (!Array.isArray(generations)) {
+      throw new Error("Invalid database response format");
+    }
 
     return NextResponse.json(generations);
   } catch (error: any) {
-    console.error("Generations API error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Generations API error:", error?.message || error);
+    return NextResponse.json(
+      { error: "Failed to load generations" },
+      { status: 500 }
+    );
   }
 }

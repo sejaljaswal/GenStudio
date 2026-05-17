@@ -3,19 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Generation {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   prompt         String
   negativePrompt String?
   width          Int?
   height         Int?
   steps          Int?
   seed           Int?
-  status         String   @default("pending")
+  status         String       @default("pending")
   imageUrl       String?
   falRequestId   String?
   errorMessage   String?
@@ -23,6 +24,6 @@ model Generation {
   parentId       String?
   parent         Generation?  @relation("GenerationToGeneration", fields: [parentId], references: [id])
   children       Generation[] @relation("GenerationToGeneration")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
