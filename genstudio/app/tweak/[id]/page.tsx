@@ -140,7 +140,7 @@ export default function TweakPage() {
                   </p>
                 </div>
               </div>
-              
+
               {generation.seed && (
                 <div className="text-sm">
                   <span className="text-muted-foreground mr-2">Seed:</span>
@@ -168,10 +168,10 @@ export default function TweakPage() {
                 Tweak the prompt or change the settings below to generate a new variation.
               </p>
             </div>
-            
-            <GenerateForm 
-              onGenerate={handleGenerate} 
-              isSubmitting={isSubmitting} 
+
+            <GenerateForm
+              onGenerate={handleGenerate}
+              isSubmitting={isSubmitting}
               buttonText="Re-generate"
               initialValues={{
                 prompt: generation.prompt,

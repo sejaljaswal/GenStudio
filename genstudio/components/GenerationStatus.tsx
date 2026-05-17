@@ -74,9 +74,9 @@ export function GenerationStatus() {
       <Card className="w-full overflow-hidden border-green-500/20 bg-green-500/5 animate-in slide-in-from-top-2 duration-300">
         <div className="flex flex-col sm:flex-row gap-6 p-6 items-center">
           <div className={`relative w-full sm:w-48 aspect-square rounded-md overflow-hidden shrink-0 transition-opacity duration-700 ease-in-out ${showImage ? 'opacity-100' : 'opacity-0'}`}>
-            <Image 
-              src={activeJobImageUrl} 
-              alt="Generated image" 
+            <Image
+              src={activeJobImageUrl}
+              alt="Generated image"
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 192px"

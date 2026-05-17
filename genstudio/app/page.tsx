@@ -21,8 +21,8 @@ export default function Home() {
             <h1 className="text-xl font-semibold tracking-tight">GenStudio</h1>
           </div>
           <nav className="flex items-center gap-6 text-sm font-medium">
-            <span className="text-foreground border-b-2 border-primary py-5">Generate</span>
-            <span className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors py-5">Gallery</span>
+            <a href="#generate" className="text-foreground hover:text-primary transition-colors py-5">Generate</a>
+            <a href="#gallery" className="text-muted-foreground hover:text-foreground transition-colors py-5">Gallery</a>
           </nav>
         </div>
       </header>
@@ -31,7 +31,7 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-4 mt-8 space-y-12">
         
         {/* Generator Section */}
-        <section className="max-w-3xl mx-auto space-y-6">
+        <section id="generate" className="max-w-3xl mx-auto space-y-6 scroll-mt-24">
           <div className="text-center space-y-2 mb-8">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Create beautiful AI art
@@ -49,7 +49,7 @@ export default function Home() {
         </section>
 
         {/* Gallery Section */}
-        <section className="pt-12 border-t border-border/40">
+        <section id="gallery" className="pt-12 border-t border-border/40 scroll-mt-24">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-semibold tracking-tight">Recent Creations</h3>
           </div>

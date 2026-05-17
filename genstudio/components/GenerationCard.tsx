@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Download, AlertCircle, Wand2, ArrowLeftRight, Paintbrush } from "lucide-react";
+import { Download, AlertCircle, Wand2, ArrowLeftRight, Paintbrush, Trash2, Loader2 } from "lucide-react";
+import { mutate } from "swr";
 import { Generation } from "@/types";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { Card } from "@/components/ui/card";
@@ -15,10 +16,32 @@ import { cn } from "@/lib/utils";
 export function GenerationCard({ generation }: { generation: Generation }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm("Are you sure you want to delete this creation?")) {
+      try {
+        setIsDeleting(true);
+        const res = await fetch(`/api/generations/${generation.id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          mutate('/api/generations');
+        } else {
+          setIsDeleting(false);
+        }
+      } catch (err) {
+        console.error("Failed to delete", err);
+        setIsDeleting(false);
+      }
+    }
+  };
 
   return (
-    <Card 
-      className="group relative overflow-hidden border-0 bg-muted/30 shadow-sm transition-all duration-300 hover:shadow-md"
+    <Card
+      className="group relative overflow-hidden w-full border-0 bg-muted/30 shadow-sm transition-all duration-300 hover:shadow-md"
       style={{ aspectRatio: generation.width && generation.height ? `${generation.width} / ${generation.height}` : '1 / 1' }}
     >
       {/* Background Error State */}
@@ -33,7 +56,7 @@ export function GenerationCard({ generation }: { generation: Generation }) {
       {generation.imageUrl && !isLoaded && (
         <div className="absolute inset-0 bg-muted/40 animate-pulse" />
       )}
-      
+
       {/* Image */}
       {generation.imageUrl && (
         <Image
@@ -58,7 +81,7 @@ export function GenerationCard({ generation }: { generation: Generation }) {
 
       {/* Hover Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-        
+
         {/* Top section of overlay (Status & Actions) */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 items-end">
           {/* Status Badge */}
@@ -75,32 +98,43 @@ export function GenerationCard({ generation }: { generation: Generation }) {
           {/* Action Buttons */}
           <div className="flex gap-2 mt-1">
             {generation.imageUrl && (
-              <a 
-                href={generation.imageUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={generation.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 download
                 className={cn(buttonVariants({ size: "icon", variant: "secondary" }), "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background")}
               >
                 <Download className="w-4 h-4 text-foreground" />
               </a>
             )}
-            
+
             {generation.status !== "failed" && (
-              <Link 
+              <Link
                 href={`/tweak/${generation.id}`}
                 className={cn(buttonVariants({ size: "icon", variant: "default" }), "h-8 w-8 rounded-full bg-primary/90 backdrop-blur-sm hover:bg-primary shadow-sm")}
               >
                 <Wand2 className="w-4 h-4 text-primary-foreground" />
               </Link>
             )}
+
+            <Button
+              variant="destructive"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-destructive/80 backdrop-blur-sm hover:bg-destructive text-white shadow-sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title="Delete creation"
+            >
+              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            </Button>
           </div>
-          
+
           {/* Edit button */}
           {generation.status === "completed" && generation.imageUrl && (
-            <Button 
-              size="sm" 
-              variant="secondary" 
+            <Button
+              size="sm"
+              variant="secondary"
               className="h-7 px-2 mt-1 text-xs bg-background/80 backdrop-blur-sm hover:bg-background"
               onClick={() => setIsEditing(true)}
             >
@@ -123,7 +157,7 @@ export function GenerationCard({ generation }: { generation: Generation }) {
           </div>
         </div>
       </div>
-      
+
       {isEditing && generation.imageUrl && (
         <CanvasEditor imageUrl={generation.imageUrl} onClose={() => setIsEditing(false)} />
       )}

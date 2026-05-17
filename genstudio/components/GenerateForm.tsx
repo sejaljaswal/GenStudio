@@ -110,7 +110,7 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                   max={8}
                   step={1}
                   value={[steps]}
-                  onValueChange={(vals) => setSteps(typeof vals === 'number' ? vals : vals[0])}
+                  onValueChange={(vals) => { if (Array.isArray(vals) && typeof vals[0] === 'number') setSteps(vals[0]); }}
                   disabled={isSubmitting}
                   className="py-1"
                 />
@@ -130,8 +130,8 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
           )}
         </div>
 
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           disabled={isSubmitting || prompt.trim().length < 3}
           className="w-full h-12 text-base font-medium relative overflow-hidden group"
         >
