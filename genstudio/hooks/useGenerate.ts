@@ -41,6 +41,7 @@ export function useGenerate() {
 
       const { generationId } = await res.json();
       setActiveJob(generationId);
+      mutate('/api/generations');
 
       let pollCount = 0;
       const MAX_POLLS = 30;

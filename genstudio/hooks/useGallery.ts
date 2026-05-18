@@ -16,7 +16,8 @@ export function useGallery() {
     fetcher,
     { 
       refreshInterval: 5000,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
       shouldRetryOnError: true,
       errorRetryCount: 3,
     }

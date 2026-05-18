@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { RelativeTime } from "@/components/ui/RelativeTime";
+import { mutate } from "swr";
 
 export default function TweakPage() {
   const params = useParams();
@@ -47,6 +48,7 @@ export default function TweakPage() {
 
   const handleGenerate = async (params: GenerateRequest) => {
     await generate({ ...params, parentId: id });
+    mutate('/api/generations');
     router.push('/');
   };
 
