@@ -151,37 +151,52 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
     fabricRef.current.renderAll();
   };
 
-  const applyCrop = () => {
-    if (!cropRect || !fabricRef.current) return;
+const applyCrop = async () => {
+  if (!cropRect || !fabricRef.current) return;
 
-    const canvas = fabricRef.current;
+  const canvas = fabricRef.current;
 
-    const left = cropRect.left || 0;
-    const top = cropRect.top || 0;
-    const width = Math.max(1, (cropRect.width || 0) * (cropRect.scaleX || 1));
-    const height = Math.max(1, (cropRect.height || 0) * (cropRect.scaleY || 1));
+  // Save current state before cropping for undo
+  saveHistory(canvas);
 
-    canvas.remove(cropRect);
+  // Compute crop dimensions accounting for scaling
+  const left = cropRect.left || 0;
+  const top = cropRect.top || 0;
+  const width = Math.max(1, (cropRect.width || 0) * (cropRect.scaleX || 1));
+  const height = Math.max(1, (cropRect.height || 0) * (cropRect.scaleY || 1));
 
-    const objects = canvas.getObjects();
-    objects.forEach((obj: any) => {
-      obj.set({
-        left: obj.left! - left,
-        top: obj.top! - top
-      });
-      obj.setCoords();
-    });
+  // Remove the crop rectangle so it doesn't appear in the final image
+  canvas.remove(cropRect);
 
-    canvas.setDimensions({
-      width: width,
-      height: height
-    });
-    canvas.renderAll();
+  // Capture the selected area as a data URL
+  const dataURL = canvas.toDataURL({ left, top, width, height, format: 'png', multiplier: 1 });
 
-    setIsCropping(false);
-    setCropRect(null);
-    saveHistory(canvas);
-  };
+  // Clear the canvas and resize to the cropped dimensions
+  canvas.clear();
+  canvas.setDimensions({ width, height });
+
+  // Load the cropped image back onto the canvas
+  const fabric = await import('fabric');
+  const croppedImg = await fabric.Image.fromURL(dataURL, { crossOrigin: 'anonymous' });
+  croppedImg.set({
+    selectable: false,
+    evented: false,
+    originX: 'left',
+    originY: 'top',
+    left: 0,
+    top: 0,
+  });
+  canvas.add(croppedImg);
+  canvas.sendObjectToBack(croppedImg);
+  canvas.renderAll();
+
+  // Reset UI state
+  setIsCropping(false);
+  setCropRect(null);
+
+  // Save the new state after cropping for undo
+  saveHistory(canvas);
+};
 
   const cancelCrop = () => {
     if (cropRect && fabricRef.current) {

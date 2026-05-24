@@ -5,7 +5,6 @@ import { GenerateRequest } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronUp, Loader2, Sparkles } from "lucide-react";
 
@@ -75,7 +74,7 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                     <span className="text-xs text-muted-foreground">Width</span>
                     <Select value={width.toString()} onValueChange={(v) => { if (v) setWidth(parseInt(v)); }} disabled={isSubmitting}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <span>{width}px</span>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="512">512px</SelectItem>
@@ -88,7 +87,7 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                     <span className="text-xs text-muted-foreground">Height</span>
                     <Select value={height.toString()} onValueChange={(v) => { if (v) setHeight(parseInt(v)); }} disabled={isSubmitting}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <span>{height}px</span>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="512">512px</SelectItem>
@@ -100,21 +99,6 @@ export function GenerateForm({ onGenerate, isSubmitting, initialValues, buttonTe
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <label className="text-sm font-medium">Inference Steps</label>
-                  <span className="text-xs text-muted-foreground">{steps}</span>
-                </div>
-                <Slider
-                  min={1}
-                  max={8}
-                  step={1}
-                  value={[steps]}
-                  onValueChange={(vals) => { if (Array.isArray(vals) && typeof vals[0] === 'number') setSteps(vals[0]); }}
-                  disabled={isSubmitting}
-                  className="py-1"
-                />
-              </div>
 
               <div className="sm:col-span-2 space-y-2">
                 <label className="text-sm font-medium">Negative Prompt</label>
