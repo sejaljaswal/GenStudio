@@ -7,7 +7,7 @@ export function useGenerate() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const setActiveJob = useGenerationStore((state) => state.setActiveJob);
   const updateActiveJob = useGenerationStore((state) => state.updateActiveJob);
 
@@ -41,15 +41,14 @@ export function useGenerate() {
 
       const { generationId } = await res.json();
       setActiveJob(generationId);
-      mutate('/api/generations');
-
-      let pollCount = 0;
+      // Removed early cache revalidation; will refresh after completion
+let pollCount = 0;
       const MAX_POLLS = 30;
 
       intervalRef.current = setInterval(async () => {
         try {
           pollCount++;
-          
+
           if (pollCount > MAX_POLLS) {
             cleanup();
             updateActiveJob({ activeJobStatus: 'failed', activeJobError: 'Timeout waiting for generation' });
@@ -58,17 +57,17 @@ export function useGenerate() {
           }
 
           const genRes = await fetch(`/api/generations/${generationId}`);
-          if (!genRes.ok) return; 
-          
+          if (!genRes.ok) return;
+
           const generation = await genRes.json() as any;
           const falRequestId = generation.falRequestId;
 
           if (!falRequestId) {
             if (generation.status === 'failed') {
               cleanup();
-              updateActiveJob({ 
-                activeJobStatus: 'failed', 
-                activeJobError: generation.errorMessage || 'Generation failed' 
+              updateActiveJob({
+                activeJobStatus: 'failed',
+                activeJobError: generation.errorMessage || 'Generation failed'
               });
               setIsSubmitting(false);
             }
@@ -76,8 +75,8 @@ export function useGenerate() {
           }
 
           const statusRes = await fetch(`/api/status/${falRequestId}`);
-          if (!statusRes.ok) return; 
-          
+          if (!statusRes.ok) return;
+
           const statusData = await statusRes.json() as any;
 
           updateActiveJob({
@@ -90,7 +89,15 @@ export function useGenerate() {
             setIsSubmitting(false);
             cleanup();
             if (statusData.status === 'completed') {
-              mutate('/api/generations');
+              // Optimistically update the SWR cache for the generations list
+              await mutate('/api/generations', (generations: any) => {
+                if (!Array.isArray(generations)) return generations;
+                return generations.map((g) =>
+                  g.id === generation.id ? { ...g, status: 'completed', imageUrl: statusData.imageUrl } : g
+                );
+              }, { revalidate: true });
+              // Revalidate in background to ensure consistency
+              mutate('/api/generations', undefined, { revalidate: true });
             }
           }
         } catch (pollError) {

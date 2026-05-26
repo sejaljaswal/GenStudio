@@ -159,7 +159,7 @@ export function GenerationCard({ generation }: { generation: Generation }) {
       </div>
 
       {isEditing && generation.imageUrl && (
-        <CanvasEditor imageUrl={generation.imageUrl} onClose={() => setIsEditing(false)} />
+        <CanvasEditor imageUrl={generation.imageUrl} generationId={generation.id} onClose={() => setIsEditing(false)} />
       )}
     </Card>
   );

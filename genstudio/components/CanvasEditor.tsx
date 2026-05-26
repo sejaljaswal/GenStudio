@@ -2,22 +2,27 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { mutate } from "swr";
 import { Input } from "@/components/ui/input";
 import { Crop, Type, Undo, Download, X, Check, XCircle } from "lucide-react";
 
 interface CanvasEditorProps {
   imageUrl: string;
+  generationId: string | number;
   onClose: () => void;
 }
 
-export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
+export function CanvasEditor({ imageUrl, generationId, onClose }: CanvasEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fabricRef = useRef<any>(null);
 
   const [history, setHistory] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
+
   const [cropRect, setCropRect] = useState<any>(null);
+
 
   const [fontSize, setFontSize] = useState(32);
   const [color, setColor] = useState("#ffffff");
@@ -30,6 +35,53 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
       return [...prev, json];
     });
   }, []);
+
+  const saveEditedImage = async () => {
+    if (!fabricRef.current) return;
+    // Convert canvas to Blob (fast). Fabric canvas may not implement toBlob, so fall back to the underlying HTMLCanvasElement.
+    const blob: Blob = await new Promise<Blob>((resolve, reject) => {
+      if (fabricRef.current && typeof (fabricRef.current as any).toBlob === 'function') {
+        (fabricRef.current as any).toBlob(resolve as any, 'image/png');
+      } else if (canvasRef.current && typeof canvasRef.current.toBlob === 'function') {
+        canvasRef.current.toBlob(resolve, 'image/png');
+      } else {
+        reject(new Error('Unable to create blob from canvas'));
+      }
+    });
+    // Create a temporary URL for upload
+    const formData = new FormData();
+    formData.append('file', blob, 'edited.png');
+
+    // Assume an endpoint exists: /api/generations/${generationId}/tweak
+    const genId = generationId;
+    console.log('Saving edited image for generation', genId);
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/generations/${genId}/tweak`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Upload failed with status', res.status, 'response:', text);
+        throw new Error('Upload failed');
+      }
+      const updated = await res.json();
+      console.log('Edit saved, server returned', updated);
+      // Optimistically update SWR cache so recent generations show the edited image
+      await mutate('/api/generations', (gens: any) => {
+        if (!Array.isArray(gens)) return gens;
+        return gens.map((g: any) => (g.id === Number(genId) ? { ...g, imageUrl: updated.imageUrl } : g));
+      }, { revalidate: true });
+      // Close editor after successful save
+      onClose();
+      console.log('Editor closed after successful save');
+    } catch (e) {
+      console.error('Failed to save edited image', e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -151,52 +203,69 @@ export function CanvasEditor({ imageUrl, onClose }: CanvasEditorProps) {
     fabricRef.current.renderAll();
   };
 
-const applyCrop = async () => {
-  if (!cropRect || !fabricRef.current) return;
+  const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+  const applyCrop = async () => {
+    const canvas = fabricRef.current;
+    if (!cropRect || !canvas) return;
 
-  const canvas = fabricRef.current;
+    setIsProcessingCrop(true);
+    // Save state before cropping for undo
+    saveHistory(canvas);
 
-  // Save current state before cropping for undo
-  saveHistory(canvas);
+    // Get accurate crop rectangle (includes scaling & rotation)
+    const rect = cropRect.getBoundingRect();
+    const { left, top, width, height } = rect;
 
-  // Compute crop dimensions accounting for scaling
-  const left = cropRect.left || 0;
-  const top = cropRect.top || 0;
-  const width = Math.max(1, (cropRect.width || 0) * (cropRect.scaleX || 1));
-  const height = Math.max(1, (cropRect.height || 0) * (cropRect.scaleY || 1));
+    // Remove the cropping rectangle UI
+    canvas.remove(cropRect);
 
-  // Remove the crop rectangle so it doesn't appear in the final image
-  canvas.remove(cropRect);
+    // Export the selected area as a Blob (async, faster than toDataURL)
+    const blob: Blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b: Blob) => {
+        if (b) resolve(b);
+        else reject(new Error('Blob conversion failed'));
+      }, 'image/png', 1, { left, top, width, height });
+    }).catch((err) => {
+      console.error(err);
+      return null as any;
+    });
 
-  // Capture the selected area as a data URL
-  const dataURL = canvas.toDataURL({ left, top, width, height, format: 'png', multiplier: 1 });
+    if (!blob) {
+      setIsProcessingCrop(false);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const fabric = await import('fabric');
+    const croppedImg = await fabric.Image.fromURL(url, { crossOrigin: 'anonymous' });
+    URL.revokeObjectURL(url);
 
-  // Clear the canvas and resize to the cropped dimensions
-  canvas.clear();
-  canvas.setDimensions({ width, height });
+    // Clear canvas and set new dimensions
+    canvas.clear();
+    canvas.setBackgroundColor?.('#000');
+    canvas.renderAll();
+    canvas.setDimensions({ width, height });
 
-  // Load the cropped image back onto the canvas
-  const fabric = await import('fabric');
-  const croppedImg = await fabric.Image.fromURL(dataURL, { crossOrigin: 'anonymous' });
-  croppedImg.set({
-    selectable: false,
-    evented: false,
-    originX: 'left',
-    originY: 'top',
-    left: 0,
-    top: 0,
-  });
-  canvas.add(croppedImg);
-  canvas.sendObjectToBack(croppedImg);
-  canvas.renderAll();
+    // Place the cropped image onto the canvas
+    croppedImg.set({
+      selectable: false,
+      evented: false,
+      originX: 'left',
+      originY: 'top',
+      left: 0,
+      top: 0,
+    });
+    canvas.add(croppedImg);
+    canvas.sendObjectToBack(croppedImg);
+    canvas.renderAll();
 
-  // Reset UI state
-  setIsCropping(false);
-  setCropRect(null);
+    // Reset UI state
+    setIsCropping(false);
+    setCropRect(null);
+    setIsProcessingCrop(false);
 
-  // Save the new state after cropping for undo
-  saveHistory(canvas);
-};
+    // Save post‑crop state for undo
+    saveHistory(canvas);
+  };
 
   const cancelCrop = () => {
     if (cropRect && fabricRef.current) {
@@ -208,21 +277,42 @@ const applyCrop = async () => {
   };
 
   const download = () => {
-    if (!fabricRef.current) return;
-    const dataURL = fabricRef.current.toDataURL({
-      format: 'png',
-      multiplier: 1, // Full size
+    if (!fabricRef.current && !canvasRef.current) return;
+    console.log('Downloading canvas as PNG');
+    const getBlob = (cb: (blob: Blob | null) => void) => {
+      if (fabricRef.current && typeof (fabricRef.current as any).toBlob === 'function') {
+        (fabricRef.current as any).toBlob(cb, 'image/png');
+      } else if (canvasRef.current && typeof canvasRef.current.toBlob === 'function') {
+        canvasRef.current.toBlob(cb, 'image/png');
+      } else {
+        console.error('Unable to create blob from canvas for download');
+        cb(null);
+      }
+    };
+    getBlob((blob) => {
+      if (!blob) {
+        console.error('Blob conversion failed');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = 'genstudio-edit.png';
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      console.log('Download triggered');
     });
-    const link = document.createElement('a');
-    link.download = 'genstudio-edit.png';
-    link.href = dataURL;
-    link.click();
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
       {/* Toolbar */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-background/95 backdrop-blur border border-border/40 p-2 rounded-xl flex items-center gap-1.5 shadow-xl overflow-x-auto max-w-[95vw]">
+        {/* Save button (appears when not cropping) */}
+        {!isCropping && <Button variant="default" size="sm" onClick={saveEditedImage} disabled={isSaving || isCropping} className="ml-2">
+                {isSaving ? 'Saving...' : 'Save Edit'}
+              </Button>
+        }
         {!isCropping ? (
           <>
             <Button variant="ghost" size="sm" onClick={startCrop}>
