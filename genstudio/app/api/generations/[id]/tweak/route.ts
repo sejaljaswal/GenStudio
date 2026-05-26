@@ -3,8 +3,9 @@ import prisma from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const formData = await request.formData();
     const file = formData.get('file');
     if (!file || !(file instanceof Blob)) {
@@ -15,13 +16,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const buffer = Buffer.from(arrayBuffer);
     const uploadsDir = path.join(process.cwd(), 'public', 'edits');
     await fs.promises.mkdir(uploadsDir, { recursive: true });
-    const filePath = path.join(uploadsDir, `${params.id}.png`);
+    const filePath = path.join(uploadsDir, `${id}.png`);
     await fs.promises.writeFile(filePath, buffer);
 
-    const imageUrl = `/edits/${params.id}.png`;
+    const imageUrl = `/edits/${id}.png`;
 
     await prisma.generation.update({
-      where: { id: Number(params.id) },
+      where: { id },
       data: { imageUrl },
     });
 

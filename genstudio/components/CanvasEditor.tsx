@@ -87,7 +87,7 @@ export function CanvasEditor({ imageUrl, generationId, onClose }: CanvasEditorPr
         (gens: any) => {
           if (!Array.isArray(gens)) return gens;
           return gens.map((g: any) =>
-            g.id === Number(genId) ? { ...g, imageUrl: updated.imageUrl } : g
+            g.id === String(genId) ? { ...g, imageUrl: updated.imageUrl } : g
           );
         },
         { revalidate: true }
@@ -118,8 +118,12 @@ export function CanvasEditor({ imageUrl, generationId, onClose }: CanvasEditorPr
       fabricRef.current = fCanvas;
 
       try {
-        const proxyUrl = `/api/proxy?url=${encodeURIComponent(imageUrl)}`;
-        const img = await fabric.FabricImage.fromURL(proxyUrl, {
+        const isRemote = imageUrl.startsWith("http://") || imageUrl.startsWith("https://");
+        const finalUrl = isRemote
+          ? `/api/proxy?url=${encodeURIComponent(imageUrl)}`
+          : imageUrl;
+
+        const img = await fabric.FabricImage.fromURL(finalUrl, {
           crossOrigin: "anonymous",
         });
 
