@@ -41,8 +41,28 @@ export function useGenerate() {
 
       const { generationId } = await res.json();
       setActiveJob(generationId);
-      // Removed early cache revalidation; will refresh after completion
-let pollCount = 0;
+
+      // Optimistically insert the new generation into the SWR cache immediately
+      mutate('/api/generations', (current: any) => {
+        const list = Array.isArray(current) ? current : [];
+        if (list.some((g: any) => g.id === generationId)) return list;
+        return [
+          {
+            id: generationId,
+            prompt: params.prompt.trim(),
+            status: 'processing',
+            imageUrl: null,
+            createdAt: new Date().toISOString(),
+            parentId: params.parentId || null,
+            width: params.width || 1024,
+            height: params.height || 1024,
+            steps: params.steps || 4,
+          },
+          ...list,
+        ];
+      }, { revalidate: false });
+
+      let pollCount = 0;
       const MAX_POLLS = 30;
 
       intervalRef.current = setInterval(async () => {
@@ -53,28 +73,44 @@ let pollCount = 0;
             cleanup();
             updateActiveJob({ activeJobStatus: 'failed', activeJobError: 'Timeout waiting for generation' });
             setIsSubmitting(false);
+            mutate('/api/generations');
             return;
           }
 
-          const genRes = await fetch(`/api/generations/${generationId}`);
+          const genRes = await fetch(`/api/generations/${generationId}`, { cache: 'no-store' });
           if (!genRes.ok) return;
 
           const generation = await genRes.json() as any;
-          const falRequestId = generation.falRequestId;
 
-          if (!falRequestId) {
-            if (generation.status === 'failed') {
-              cleanup();
-              updateActiveJob({
-                activeJobStatus: 'failed',
-                activeJobError: generation.errorMessage || 'Generation failed'
-              });
-              setIsSubmitting(false);
-            }
+          // For mock fallback: the generation is already completed in the DB
+          if (generation.status === 'completed' && generation.imageUrl) {
+            cleanup();
+            setIsSubmitting(false);
+            updateActiveJob({
+              activeJobStatus: 'completed',
+              activeJobImageUrl: generation.imageUrl,
+              activeJobError: null,
+            });
+            // Force SWR to refetch from server to get the completed generation
+            mutate('/api/generations');
             return;
           }
 
-          const statusRes = await fetch(`/api/status/${falRequestId}`);
+          if (generation.status === 'failed') {
+            cleanup();
+            updateActiveJob({
+              activeJobStatus: 'failed',
+              activeJobError: generation.errorMessage || 'Generation failed',
+            });
+            setIsSubmitting(false);
+            mutate('/api/generations');
+            return;
+          }
+
+          const falRequestId = generation.falRequestId;
+          if (!falRequestId) return;
+
+          const statusRes = await fetch(`/api/status/${falRequestId}`, { cache: 'no-store' });
           if (!statusRes.ok) return;
 
           const statusData = await statusRes.json() as any;
@@ -88,17 +124,8 @@ let pollCount = 0;
           if (statusData.status === 'completed' || statusData.status === 'failed') {
             setIsSubmitting(false);
             cleanup();
-            if (statusData.status === 'completed') {
-              // Optimistically update the SWR cache for the generations list
-              await mutate('/api/generations', (generations: any) => {
-                if (!Array.isArray(generations)) return generations;
-                return generations.map((g) =>
-                  g.id === generation.id ? { ...g, status: 'completed', imageUrl: statusData.imageUrl } : g
-                );
-              }, { revalidate: true });
-              // Revalidate in background to ensure consistency
-              mutate('/api/generations', undefined, { revalidate: true });
-            }
+            // Force SWR to refetch from server to get the latest data
+            mutate('/api/generations');
           }
         } catch (pollError) {
           console.error("Polling error:", pollError);

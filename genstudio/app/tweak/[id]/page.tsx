@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, Sparkles, AlertCircle } from "lucide-react";
 import { GenerateForm } from "@/components/GenerateForm";
@@ -105,12 +104,10 @@ export default function TweakPage() {
             <Card className="overflow-hidden border-border/40">
               {generation.imageUrl ? (
                 <div className="relative aspect-square w-full bg-muted/20">
-                  <Image
+                  <img
                     src={generation.imageUrl}
                     alt={generation.prompt}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
               ) : (
@@ -155,7 +152,7 @@ export default function TweakPage() {
                   <Separator />
                   <div className="text-sm">
                     <p className="text-muted-foreground mb-1">This was itself a tweak of:</p>
-                    <p className="line-clamp-2 text-foreground/80 italic">"{(generation as any).parent.prompt}"</p>
+                    <p className="line-clamp-2 text-foreground/80 italic">&ldquo;{(generation as any).parent.prompt}&rdquo;</p>
                   </div>
                 </>
               )}

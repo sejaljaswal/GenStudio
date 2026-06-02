@@ -28,7 +28,7 @@ export async function GET(
 
     if (falStatus.status === "COMPLETED") {
       const result = await fal.queue.result("fal-ai/flux/schnell", { requestId }) as any;
-      
+
       generation = await prisma.generation.update({
         where: { id: generation.id },
         data: {
@@ -50,7 +50,7 @@ export async function GET(
     return NextResponse.json(generation);
   } catch (error: any) {
     console.error("Status API error:", error);
-    
+
     try {
       const { requestId } = await params;
       const generation = await prisma.generation.findFirst({ where: { falRequestId: requestId } });
@@ -66,7 +66,7 @@ export async function GET(
     } catch (dbError) {
       console.error("Failed to update status to failed:", dbError);
     }
-    
+
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

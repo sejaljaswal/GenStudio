@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Download, AlertCircle, Wand2, ArrowLeftRight, Paintbrush, Trash2, Loader2 } from "lucide-react";
 import { mutate } from "swr";
@@ -14,7 +13,6 @@ import { CanvasEditor } from "@/components/CanvasEditor";
 import { cn } from "@/lib/utils";
 
 export function GenerationCard({ generation }: { generation: Generation }) {
-  const [isLoaded, setIsLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -39,6 +37,8 @@ export function GenerationCard({ generation }: { generation: Generation }) {
     }
   };
 
+  const isProcessing = generation.status === "processing" || generation.status === "pending";
+
   return (
     <Card
       className="group relative overflow-hidden w-full border-0 bg-muted/30 shadow-sm transition-all duration-300 hover:shadow-md"
@@ -52,20 +52,29 @@ export function GenerationCard({ generation }: { generation: Generation }) {
         </div>
       )}
 
-      {/* Image Skeleton */}
-      {generation.imageUrl && !isLoaded && (
-        <div className="absolute inset-0 bg-muted/40 animate-pulse" />
+      {/* Processing / Pending State */}
+      {isProcessing && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-muted/20 space-y-3">
+          <div className="relative">
+            <div className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-primary to-purple-600 opacity-60 blur animate-pulse" />
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-background border border-primary/20">
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+            </div>
+          </div>
+          <div className="space-y-1 z-10">
+            <p className="text-xs font-semibold text-foreground animate-pulse">Generating...</p>
+            <p className="text-[10px] text-muted-foreground line-clamp-1 max-w-[120px] mx-auto">{generation.prompt}</p>
+          </div>
+        </div>
       )}
 
-      {/* Image */}
+      {/* Image — uses native <img> to avoid Next.js Image proxy issues with on-the-fly generated URLs */}
       {generation.imageUrl && (
-        <Image
+        <img
           src={generation.imageUrl}
           alt={generation.prompt}
-          fill
-          className={`object-cover transition-all duration-700 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-105"}`}
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-          onLoad={() => setIsLoaded(true)}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
         />
       )}
 
@@ -88,7 +97,7 @@ export function GenerationCard({ generation }: { generation: Generation }) {
           {generation.status === 'completed' && (
             <Badge className="bg-green-500/80 backdrop-blur-sm text-white border-none shadow-sm pointer-events-none">Completed</Badge>
           )}
-          {generation.status === 'processing' || generation.status === 'pending' ? (
+          {isProcessing ? (
             <Badge className="bg-yellow-500/80 backdrop-blur-sm text-white border-none shadow-sm animate-pulse pointer-events-none">Processing</Badge>
           ) : null}
           {generation.status === 'failed' && (

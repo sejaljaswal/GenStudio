@@ -14,7 +14,7 @@ export function useGallery() {
   const { data, error, isLoading, mutate } = useSWR(
     '/api/generations',
     fetcher,
-    { 
+    {
       refreshInterval: 5000,
       revalidateOnFocus: true,
       revalidateOnMount: true,
